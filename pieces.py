@@ -1,21 +1,23 @@
 import pygame
+import copy
 from pygame import color
 from constants import NO_OF_ROWS, NO_OF_COLS, CUBE_SIZE, WIDTH, HEIGHT
 from constants import BLACK, WHITE, RED, BLUE
 
-b_pawn = pygame.transform.scale2x(pygame.image.load("./images/black_pawn.png"))
-b_rook = pygame.transform.scale2x(pygame.image.load("./images/black_rook.png"))
-b_knight = pygame.transform.scale2x(pygame.image.load("./images/black_knight.png"))
-b_bishop = pygame.transform.scale2x(pygame.image.load("./images/black_bishop.png"))
-b_queen = pygame.transform.scale2x(pygame.image.load("./images/black_queen.png"))
-b_king = pygame.transform.scale2x(pygame.image.load("./images/black_king.png"))
+path = "D:/projects/PYTHON/Pygame/Chess/images/"
+b_pawn = pygame.transform.scale2x(pygame.image.load(path + "black_pawn.png"))
+b_rook = pygame.transform.scale2x(pygame.image.load(path + "black_rook.png"))
+b_knight = pygame.transform.scale2x(pygame.image.load(path + "black_knight.png"))
+b_bishop = pygame.transform.scale2x(pygame.image.load(path + "black_bishop.png"))
+b_queen = pygame.transform.scale2x(pygame.image.load(path + "black_queen.png"))
+b_king = pygame.transform.scale2x(pygame.image.load(path + "black_king.png"))
 
-w_pawn = pygame.transform.scale2x(pygame.image.load("./images/white_pawn.png"))
-w_rook = pygame.transform.scale2x(pygame.image.load("./images/white_rook.png"))
-w_knight = pygame.transform.scale2x(pygame.image.load("./images/white_knight.png"))
-w_bishop = pygame.transform.scale2x(pygame.image.load("./images/white_bishop.png"))
-w_queen = pygame.transform.scale2x(pygame.image.load("./images/white_queen.png"))
-w_king = pygame.transform.scale2x(pygame.image.load("./images/white_king.png"))
+w_pawn = pygame.transform.scale2x(pygame.image.load(path + "white_pawn.png"))
+w_rook = pygame.transform.scale2x(pygame.image.load(path + "white_rook.png"))
+w_knight = pygame.transform.scale2x(pygame.image.load(path + "white_knight.png"))
+w_bishop = pygame.transform.scale2x(pygame.image.load(path + "white_bishop.png"))
+w_queen = pygame.transform.scale2x(pygame.image.load(path + "white_queen.png"))
+w_king = pygame.transform.scale2x(pygame.image.load(path + "white_king.png"))
 
 class Piece:
     def __init__(self, screen, row, col, color):
@@ -45,21 +47,34 @@ class Piece:
           
     def update_valid_moves(self, board):
         self.moves = self.valid_moves(board)
+        new_board = [[0 for i in range(NO_OF_ROWS)] for j in range(NO_OF_ROWS)]
+        # cloning the list, was stuck because i didnt clone
+        for i in range (len(board)):
+            for j in range(len(board[i])):
+                if board[i][j] != 0:
+                    new_board[i][j] = board[i][j].__class__(board[i][j].screen, board[i][j].row, board[i][j].col, board[i][j].color)
 
-        new_board = board[:]
+        #print(new_board)
         valid_moves = []
 
+     
         for move in self.moves:
             i, j = move
             cur = new_board[self.row][self.col]
             new_board[self.row][self.col] = 0
-            whatever = new_board[i][j]
+            temp = new_board[i][j]
             new_board[i][j] = cur
+            if cur != 0:
+                cur.update_pos((i, j))
 
-            if not self.is_check(self.color, new_board):
+            is_check = self.is_check(self.color, new_board)
+
+            if not is_check:
                 valid_moves.append(move)
+            if cur != 0:
+                cur.update_pos((self.row, self.col))
             new_board[self.row][self.col] = cur
-            new_board[i][j] = whatever
+            new_board[i][j] = temp
         
         self.moves = valid_moves
 
@@ -74,21 +89,32 @@ class Piece:
         king_pos = (-1, -1)
         king = 0
         enemy_moves = []
-        # TODO CHNAGES NEEDED
+        enemies = []
+
         for row in board:
             for piece in row:
                 if isinstance(piece, King) and piece.color == color:
                     king_pos = piece.row, piece.col
                     king = board[piece.row][piece.col]
                 if piece != 0 and piece.color != color:
-                    enemy_moves.extend(piece.moves)
+                    enemies.append(piece)
+                    #enemy_moves.extend(piece.moves)
+
+        for enemy in enemies:
+            enemy_moves.extend(enemy.valid_moves(board))
 
         for pos in enemy_moves:
             if pos == king_pos:
-                #king.is_under_attack = True
                 return True
+
         return False
-    
+
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        return self.__str__() + f"{self.color}"
+        
 
 class Pawn(Piece):
 
@@ -105,6 +131,8 @@ class Pawn(Piece):
     def valid_moves(self, board):
         moves = []
         i, j = self.row, self.col
+
+        # TODO en passant
 
         if self.color == "white":
             if i > 0:
@@ -141,6 +169,7 @@ class Pawn(Piece):
 
 class King(Piece):
     def set_image(self):
+        self.never_moved = True
         self.is_under_attack = False
         if self.color == "black":
             self.piece_img = b_king
@@ -188,6 +217,25 @@ class King(Piece):
             # down left
             if j - 1 >= 0 and (board[i + 1][j - 1] == 0 or board[i + 1][j - 1].color != cur.color):
                 moves.append((i + 1, j - 1))
+
+        # Castling
+        if not self.is_under_attack and self.never_moved:
+            # black king
+            if (i, j) == (0, 4):
+                if isinstance(board[0][0], Rook) and board[0][0].never_moved:
+                    if board[0][1] == 0 and board[0][2] == 0 and board[0][3] == 0:
+                        moves.append((0, 2))
+                if isinstance(board[0][7], Rook) and board[0][7].never_moved:
+                    if board[0][6] == 0 and board[0][5] == 0:
+                        moves.append((0, 6))
+            # white king
+            elif (i, j) == (7, 4):
+                if isinstance(board[7][0], Rook) and board[7][0].never_moved:
+                    if board[7][1] == 0 and board[7][2] == 0 and board[7][3] == 0:
+                        moves.append((7, 2))
+                if isinstance(board[7][7], Rook) and board[7][7].never_moved:
+                    if board[7][6] == 0 and board[7][5] == 0:
+                        moves.append((7, 6))
         
         return moves
 
@@ -294,6 +342,7 @@ class Queen(Piece):
 
 class Rook(Piece):
     def set_image(self):
+        self.never_moved = True
         if self.color == "black":
             self.piece_img = b_rook
         else:

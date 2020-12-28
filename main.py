@@ -4,24 +4,31 @@ from board import Board
 from constants import WIDTH, HEIGHT
 
 pygame.init()
+pygame.font.init()
 clock = pygame.time.Clock()
 pygame.display.set_caption("Chess")
+pygame.display.set_icon(pygame.image.load("D:/projects/PYTHON/Pygame/Chess/images/white_king.png"))
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
-game_manager = GameManager(screen)
+game = GameManager(screen)
 
 
 while True:
     clock.tick(60)
-    game_manager.draw()
+    game.draw()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            game_manager.quit()
+            game.quit()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            x, y = game_manager.get_clicked()
-            game_manager.select(x, y)
+            x, y = game.get_clicked()
+            game.select(x, y)
+        
+        if event.type == pygame.KEYDOWN:
+            game.started = True
+            if event.key == pygame.K_r:
+                game.reset()
 
     pygame.display.flip()
 

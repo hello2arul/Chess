@@ -53,23 +53,25 @@ class Board:
             for piece in row:
                 if isinstance(piece, Piece):
                     piece.draw()
+
+        pygame.display.flip()
     
     def select(self, i, j):
         prev = (-1, -1)
         cur = self.board[i][j]
-        changed = False
+        moved = False
         for row in self.board:
             for piece in row:
                 if piece != 0 and piece.selected:
                     prev = (piece.row, piece.col)
-           
+
         # if new pos is empty and a piece was already selected or new pos is an enemy
         if prev != (-1, -1) and (cur == 0 or self.board[prev[0]][prev[1]].color != cur.color):
             valid_moves = self.board[prev[0]][prev[1]].moves
             if (i, j) in valid_moves:
-                changed = self.move(prev, (i, j))
+                moved = self.move(prev, (i, j))
                 # switching between diff colors
-                if not changed:
+                if not moved:
                     self.make_selected((i, j))
 
             # switching between different colors
@@ -83,37 +85,24 @@ class Board:
                 self.make_selected((i, j))
             else:
                 # switching between same colors
-                    self.make_selected((i, j))   
-        # if changed to a new pos reset selected
-        if changed:
+                self.make_selected((i, j))   
+        # if moved to a new pos reset selected
+        if moved:
             self.reset_selected()
+            self.draw()
+            # Castling
+            # if isinstance(self.board[i][j], Rook) or isinstance(self.board[i][j], King):
+            #     self.board[i][j].never_moved = False
+
             color = "white" if self.board[i][j].color == "black" else "black"
 
             if self.is_under_check(color):
-                print("check")
-                self.update_moves()
-                cur = self.board[i][j]
-                danger_moves = cur.moves
-                # for row in self.board:
-                #     for piece in row:
-                #         if isinstance(piece, Piece) and piece.color == color :
-                #             to_remove = []
-                #             for idx, pos in enumerate(piece.moves):
-                #                 if pos not in danger_moves:
-                #                     to_remove.append(idx)
-                #                 # king cannot move to the danger moves from a danger pos
-                #                 elif isinstance(piece, King):
-                #                     to_remove.append(idx)
-                #             print(f"{piece.moves} , {to_remove}")
-                #             for idx in reversed(to_remove):
-                #                 piece.moves.pop(idx)
                             
-
-                #self.change_check_status(color, True)
-                # self.make_king_in_danger(color)
-                # if self.is_checkmate(color):
-                #     self.winner("black" if color == "white" else "white")
-            #elif self.is_stalemate()
+                if self.is_checkmate(color):
+                    self.winner("black" if color == "white" else "white" + " won!")
+            # stalemate, no valid moves but not in check
+            elif self.is_checkmate(color):
+                self.winner("Its a stalemate")
             else:
                 self.reset_danger()
 
@@ -126,6 +115,27 @@ class Board:
         elif not self.is_whites_turn and cur_selected.color != "black":
             return False
 
+        if isinstance(cur_selected, King) or isinstance(cur_selected, Rook):
+            cur_selected.never_moved = False
+
+        castled = False
+        # castling
+        if isinstance(self.board[prev[0]][prev[1]], King) and abs(prev[1] - to[1]) > 1:
+            # while left castle
+            if to == (7, 2):
+                self.move((7, 0), (7, 3))
+            # white right
+            elif to == (7, 6):
+                self.move((7, 7), (7, 5)) #board[7][7].update_pos((7, 5))
+            # black left
+            elif to == ((0, 2)):
+                self.move((0, 0), (0, 3)) #board[0][0].update_pos((0, 3))
+            # black right
+            else:
+                self.move((0, 7), (0, 5)) #board[0][7].update_pos((0, 5))
+            
+            castled = True
+            
         cur_selected.update_pos(to)
         self.board[to[0]][to[1]] = cur_selected
         self.board[prev[0]][prev[1]] = 0
@@ -135,7 +145,8 @@ class Board:
             if to[0] == 7 or to[0] == 0:
                 self.board[to[0]][to[1]] = self.ask_for_pawn()(self.screen, to[0], to[1], cur_selected.color)
         
-        self.is_whites_turn = not self.is_whites_turn
+        if not castled:
+            self.is_whites_turn = not self.is_whites_turn
         return True
 
     def make_selected(self, pos):
@@ -200,7 +211,8 @@ class Board:
                     moves_available.extend(piece.moves)
         
         return len(moves_available) == 0
-
+    
+    # TODO delete this method
     def change_check_status(self, color, boolean):
         for row in self.board:
             for piece in row:
@@ -210,6 +222,7 @@ class Board:
     def ask_for_pawn(self):
         window = Tk()
         window.geometry("200x100")
+        window.attributes('-topmost', True)
         window.resizable(width=False, height=False)
         window.title("Options")
 
@@ -227,11 +240,12 @@ class Board:
 
         return map[options.index(option)]
 
-    def winner(self, color):
+    def winner(self, text):
         root = Tk()
+        root.attributes('-topmost', True)
         root.overrideredirect(1)
         root.withdraw()
-        yes = messagebox.askokcancel(f"{color} won!", "Want to play again?")
+        yes = messagebox.askokcancel(f"{text}", "Want to play again?")
 
         if yes:
             self.__init__(self.screen)
