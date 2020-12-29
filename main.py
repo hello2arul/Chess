@@ -1,4 +1,5 @@
 import pygame
+import os
 from game_manager import GameManager
 from board import Board
 from constants import WIDTH, HEIGHT
@@ -7,7 +8,7 @@ pygame.init()
 pygame.font.init()
 clock = pygame.time.Clock()
 pygame.display.set_caption("Chess")
-pygame.display.set_icon(pygame.image.load("D:/projects/PYTHON/Pygame/Chess/images/white_king.png"))
+pygame.display.set_icon(pygame.image.load(f"{os.getcwd()}\images\\white_king.png"))
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 game = GameManager(screen)
