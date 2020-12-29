@@ -1,5 +1,6 @@
 import pygame
 import sys
+import os
 from board import Board
 from constants import CUBE_SIZE, WIDTH, HEIGHT
 from constants import BLACK, WHITE
@@ -9,7 +10,7 @@ class GameManager:
         self.screen = screen
         self.board = Board(screen)
         self.started = False
-        self.text = pygame.font.Font("D:/projects/PYTHON/Pygame/Chess/fonts/arial.ttf", 30)
+        self.text = pygame.font.Font(f"{os.getcwd()}\\fonts\\arial.ttf", 30)
 
     def get_clicked(self):
         x, y = pygame.mouse.get_pos()

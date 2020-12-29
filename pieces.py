@@ -1,10 +1,10 @@
 import pygame
-import copy
+import os
 from pygame import color
 from constants import NO_OF_ROWS, NO_OF_COLS, CUBE_SIZE, WIDTH, HEIGHT
 from constants import BLACK, WHITE, RED, BLUE
 
-path = "D:/projects/PYTHON/Pygame/Chess/images/"
+path = rf"{os.getcwd()}" + "\images\\"
 b_pawn = pygame.transform.scale2x(pygame.image.load(path + "black_pawn.png"))
 b_rook = pygame.transform.scale2x(pygame.image.load(path + "black_rook.png"))
 b_knight = pygame.transform.scale2x(pygame.image.load(path + "black_knight.png"))
