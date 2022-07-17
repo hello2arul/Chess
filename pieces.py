@@ -109,6 +109,20 @@ class Piece:
 
         return False
 
+    def get_enemy_moves(self, board, color):
+        enemy_moves = []
+        enemies = []
+
+        for row in board:
+            for piece in row:
+                if piece != 0 and piece.color != color:
+                    enemies.append(piece)
+
+        for enemy in enemies:
+            enemy_moves.extend(enemy.valid_moves(board))
+        
+        return enemy_moves
+
     def __str__(self):
         return self.__class__.__name__
 
@@ -222,20 +236,27 @@ class King(Piece):
         if not self.is_under_attack and self.never_moved:
             # black king
             if (i, j) == (0, 4):
+                can_castle = True
                 if isinstance(board[0][0], Rook) and board[0][0].never_moved:
                     if board[0][1] == 0 and board[0][2] == 0 and board[0][3] == 0:
-                        moves.append((0, 2))
+                        if (0, 3) not in self.get_enemy_moves(board, "black"):
+                            moves.append((0, 2))
+
                 if isinstance(board[0][7], Rook) and board[0][7].never_moved:
                     if board[0][6] == 0 and board[0][5] == 0:
-                        moves.append((0, 6))
+                        if (0, 5) not in self.get_enemy_moves(board, "black"):
+                            moves.append((0, 6))
+
             # white king
-            elif (i, j) == (7, 4):
+            elif (i, j) == (7, 4): 
                 if isinstance(board[7][0], Rook) and board[7][0].never_moved:
                     if board[7][1] == 0 and board[7][2] == 0 and board[7][3] == 0:
-                        moves.append((7, 2))
+                        if (7, 3) not in self.get_enemy_moves(board, "white"):
+                            moves.append((7, 2))
                 if isinstance(board[7][7], Rook) and board[7][7].never_moved:
                     if board[7][6] == 0 and board[7][5] == 0:
-                        moves.append((7, 6))
+                        if (7, 5) not in self.get_enemy_moves(board, "white"):
+                            moves.append((7, 6))
         
         return moves
 
